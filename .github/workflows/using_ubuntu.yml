@@ -26,6 +26,7 @@ jobs:
 
     - name: Build Ring 
       run: |
+        sudo apt-get update
         cd ring/build
         chmod +x installdepubuntu.sh buildgcc.sh
         ./installdepubuntu.sh
