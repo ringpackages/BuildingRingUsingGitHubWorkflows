@@ -29,11 +29,16 @@ jobs:
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       shell: bash
 
+    - name: Install Dependency  
+      run: |
+        cd ring/build
+        chmod +x installdepmac.sh 
+        ./installdepmac.sh
+
     - name: Build Ring 
       run: |
         cd ring/build
-        chmod +x installdepmac.sh buildclang.sh
-        ./installdepmac.sh
+        chmod +x buildclang.sh
         ./buildclang.sh
 
     - name: Ring Tests 
