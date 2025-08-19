@@ -1,0 +1,57 @@
+name: Using Ubuntu
+
+on:
+  push:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.ring'
+      - '.github/workflows/using_ubuntu.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Clone Ring Language
+      uses: actions/checkout@v4
+      with:
+        repository: ring-lang/ring
+        path: ring
+
+    - name: Build Ring 
+      run: |
+        sudo apt-get update
+        cd ring/build
+        chmod +x installdepubuntu.sh buildgcc.sh
+        ./installdepubuntu.sh
+        ./buildgcc.sh
+
+    - name: Ring Tests 
+      run: |
+        cd ring/language/tests
+        chmod +x test
+        ./test
+
+    - name: Ring PM 
+      run: |
+        ringpm list
+        ringpm install firstpackage from mahmoudfayed
+        ringpm run firstpackage
+
+    - name: Test simple program 
+      run: |
+        ring test.ring
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ringforubuntu
+        path:  |
+          ring/bin
+          ring/lib

@@ -1,0 +1,61 @@
+name: Using macOS
+
+on:
+  push:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.ring'
+      - '.github/workflows/using_macos.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Clone Ring Language
+      uses: actions/checkout@v4
+      with:
+        repository: ring-lang/ring
+        path: ring
+
+    - name: Install Homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      shell: bash
+
+    - name: Build Ring 
+      run: |
+        cd ring/build
+        chmod +x installdepmac.sh buildclang.sh
+        ./installdepmac.sh
+        ./buildclang.sh
+
+    - name: Ring Tests 
+      run: |
+        cd ring/language/tests
+        chmod +x test
+        ./test
+
+    - name: Ring PM 
+      run: |
+        ringpm list
+        ringpm install firstpackage from mahmoudfayed
+        ringpm run firstpackage
+
+    - name: Test simple program 
+      run: |
+        ring test.ring
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ringformacosapplesilicon
+        path:  |
+          ring/bin
+          ring/lib
