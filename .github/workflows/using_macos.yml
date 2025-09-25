@@ -57,11 +57,6 @@ jobs:
       run: |
         ring test.ring
 
-    - name: Revise paths inside libs
-      run: |
-        cd ring/bin
-        ./reviselibsformacos.sh
-
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
