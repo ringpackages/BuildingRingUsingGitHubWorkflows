@@ -64,3 +64,4 @@ jobs:
         path:  |
           ring/bin
           ring/lib
+          ring/extensions
