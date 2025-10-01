@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14-x64
 
     steps:
     - name: Checkout project
@@ -60,7 +60,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ringformacosapplesilicon
+        name: ringformacosintel
         path:  |
           ring/bin
           ring/lib
