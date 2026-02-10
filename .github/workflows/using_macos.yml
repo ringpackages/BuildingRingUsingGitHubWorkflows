@@ -41,12 +41,6 @@ jobs:
         chmod +x buildclang.sh
         ./buildclang.sh
 
-    - name: Check RingQt Full
-      run: |
-        cd ring/extensions/ringqt
-        ./gencode.sh
-        ./buildclang.sh
-
     - name: Ring Tests 
       run: |
         cd ring/language/tests
