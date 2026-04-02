@@ -1,5 +1,5 @@
 ? "We can use GitHub workflows to build the Ring programming language from source code"
 
-? "Test date: 2026.04.01"
+? "Test date: 2026.04.02"
 
 
