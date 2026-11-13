@@ -1,6 +1,7 @@
 name: Using Ubuntu
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - '**.c'
@@ -11,6 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
 
     steps:
     - name: Checkout project
@@ -47,6 +49,75 @@ jobs:
     - name: Test simple program 
       run: |
         ring test.ring
+
+    # RingQt6 : Install the package, install Qt 6, build from source code, and test
+    # (Ring already contains RingQt for Qt 5, the RingQt6 package replaces the Qt classes in libraries/guilib)
+    - name: Install RingQt6 package
+      id: ringqt6pkg
+      run: |
+        ringpm install ringqt6
+        ls ring/extensions/ringqt6
+
+    - name: RingQt6 (Core) - Install Qt 6 dependencies
+      id: ringqt6core_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_ubuntu_qt6.sh core
+
+    - name: RingQt6 (Core) - Build from source code
+      id: ringqt6core_build
+      if: ${{ !cancelled() && steps.ringqt6core_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildgcc_core_qt6.sh
+
+    - name: RingQt6 (Core) - Test
+      if: ${{ !cancelled() && steps.ringqt6core_build.outcome == 'success' }}
+      run: |
+        ring testqt6core.ring
+
+    - name: RingQt6 (Light) - Install Qt 6 dependencies
+      id: ringqt6light_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_ubuntu_qt6.sh light
+
+    - name: RingQt6 (Light) - Build from source code
+      id: ringqt6light_build
+      if: ${{ !cancelled() && steps.ringqt6light_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildgcc_light_qt6.sh
+
+    - name: RingQt6 (Light) - Test
+      if: ${{ !cancelled() && steps.ringqt6light_build.outcome == 'success' }}
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        ring testqt6light.ring
+
+    - name: RingQt6 (Full) - Install Qt 6 dependencies
+      id: ringqt6full_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_ubuntu_qt6.sh full
+
+    - name: RingQt6 (Full) - Build from source code
+      id: ringqt6full_build
+      if: ${{ !cancelled() && steps.ringqt6full_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildgcc_qt6.sh
+
+    - name: RingQt6 (Full) - Test
+      if: ${{ !cancelled() && steps.ringqt6full_build.outcome == 'success' }}
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        ring testqt6.ring
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
