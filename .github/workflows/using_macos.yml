@@ -76,6 +76,7 @@ jobs:
 
     - name: RingQt6 (Core) - Build from source code
       id: ringqt6core_build
+      timeout-minutes: 45
       if: ${{ !cancelled() && steps.ringqt6core_deps.outcome == 'success' }}
       run: |
         cd ring/extensions/ringqt6
@@ -95,6 +96,7 @@ jobs:
 
     - name: RingQt6 (Light) - Build from source code
       id: ringqt6light_build
+      timeout-minutes: 45
       if: ${{ !cancelled() && steps.ringqt6light_deps.outcome == 'success' }}
       run: |
         cd ring/extensions/ringqt6
@@ -116,6 +118,7 @@ jobs:
 
     - name: RingQt6 (Full) - Build from source code
       id: ringqt6full_build
+      timeout-minutes: 45
       if: ${{ !cancelled() && steps.ringqt6full_deps.outcome == 'success' }}
       run: |
         cd ring/extensions/ringqt6
