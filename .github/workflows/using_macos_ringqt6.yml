@@ -1,0 +1,141 @@
+name: Using macOS (RingQt6)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '**.c'
+      - '**.h'
+      - '**.ring'
+      - '.github/workflows/using_macos_ringqt6.yml'
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 180
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Clone Ring Language
+      uses: actions/checkout@v4
+      with:
+        repository: ring-lang/ring
+        path: ring
+
+    - name: Install Homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      shell: bash
+
+    - name: Install Dependency  
+      run: |
+        cd ring/build
+        chmod +x installdepmac.sh 
+        ./installdepmac.sh
+
+    - name: Build Ring 
+      run: |
+        cd ring/build
+        chmod +x buildclang.sh
+        ./buildclang.sh
+
+    - name: Ring Tests 
+      run: |
+        cd ring/language/tests
+        chmod +x test
+        ./test
+
+    - name: Ring PM 
+      run: |
+        ringpm list
+        ringpm install firstpackage from mahmoudfayed
+        ringpm run firstpackage
+
+    - name: Test simple program 
+      run: |
+        ring test.ring
+
+    # RingQt6 : Install the package, install Qt 6, build from source code, and test
+    # (Ring already contains RingQt for Qt 5, the RingQt6 package replaces the Qt classes in libraries/guilib)
+    - name: Install RingQt6 package
+      id: ringqt6pkg
+      run: |
+        ringpm install ringqt6
+        ls ring/extensions/ringqt6
+
+    - name: RingQt6 (Core) - Install Qt 6 (Homebrew)
+      id: ringqt6core_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_macos_qt6.sh
+
+    - name: RingQt6 (Core) - Build from source code
+      id: ringqt6core_build
+      timeout-minutes: 45
+      if: ${{ !cancelled() && steps.ringqt6core_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildclang_core_qt6.sh
+
+    - name: RingQt6 (Core) - Test
+      if: ${{ !cancelled() && steps.ringqt6core_build.outcome == 'success' }}
+      run: |
+        ring testqt6core.ring
+
+    - name: RingQt6 (Light) - Check Qt 6
+      id: ringqt6light_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_macos_qt6.sh
+
+    - name: RingQt6 (Light) - Build from source code
+      id: ringqt6light_build
+      timeout-minutes: 45
+      if: ${{ !cancelled() && steps.ringqt6light_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildclang_light_qt6.sh
+
+    - name: RingQt6 (Light) - Test
+      if: ${{ !cancelled() && steps.ringqt6light_build.outcome == 'success' }}
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        ring testqt6light.ring
+
+    - name: RingQt6 (Full) - Check Qt 6
+      id: ringqt6full_deps
+      if: ${{ !cancelled() && steps.ringqt6pkg.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./installdeps_macos_qt6.sh
+
+    - name: RingQt6 (Full) - Build from source code
+      id: ringqt6full_build
+      timeout-minutes: 45
+      if: ${{ !cancelled() && steps.ringqt6full_deps.outcome == 'success' }}
+      run: |
+        cd ring/extensions/ringqt6
+        ./buildclang_qt6.sh
+
+    - name: RingQt6 (Full) - Test
+      if: ${{ !cancelled() && steps.ringqt6full_build.outcome == 'success' }}
+      env:
+        QT_QPA_PLATFORM: offscreen
+      run: |
+        ring testqt6.ring
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ringqt6formacosapplesilicon
+        path:  |
+          ring/bin
+          ring/lib
+          ring/extensions

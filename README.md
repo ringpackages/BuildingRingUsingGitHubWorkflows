@@ -4,8 +4,13 @@ A simple workflow to build the Ring programming language from source code and ru
 
 The workflows (`.github/workflows`)
 
-* `using_ubuntu.yml` : Ubuntu (GCC)
-* `using_macos.yml` : macOS (Clang - Apple Silicon)
+* `using_ubuntu.yml` : Ubuntu (GCC) - Ring 
+* `using_macos.yml` : macOS (Clang - Apple Silicon) - Ring 
+* `using_ubuntu_ringqt6.yml` : Ubuntu (GCC) - Ring + RingQt6
+* `using_macos_ringqt6.yml` : macOS (Clang - Apple Silicon) - Ring + RingQt6
+
+The first two workflows build Ring and test it (steps 1 and 2 below).
+The `*_ringqt6.yml` workflows do the same and also test RingQt6 (step 3).
 
 Each workflow
 
