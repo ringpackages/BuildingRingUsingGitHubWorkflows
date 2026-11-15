@@ -1,0 +1,103 @@
+name: Using macOS (Release)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/using_macos_release.yml'
+      - 'release/macos/**'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout project
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Clone Ring Language
+      uses: actions/checkout@v4
+      with:
+        repository: ring-lang/ring
+        path: ring
+
+    - name: Install Homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      shell: bash
+
+    - name: Install Dependency  
+      run: |
+        cd ring/build
+        chmod +x installdepmac.sh 
+        ./installdepmac.sh
+
+    - name: Build Ring 
+      run: |
+        cd ring/build
+        chmod +x buildclang.sh
+        ./buildclang.sh
+
+    # Prepare the release before running tests (tests/ringpm may add files to the ring folder)
+    - name: Prepare release folder
+      run: |
+        mkdir -p dist
+        cp -a ring dist/ring
+        cp release/macos/README.TXT dist/README.TXT
+        cd dist/ring
+        rm -rf .git .github
+        # Remove content that is not distributed
+        rm -rf applications/winstartupmanager
+        rm -rf tools/ringpm/packages/winstartupmanager
+        find extensions/libdepwin -mindepth 1 -maxdepth 1 ! -name 'Apache2.2' -exec rm -rf {} +
+        rm -rf language/visualsrc
+        find documents -mindepth 1 -maxdepth 1 ! -name 'ring.pdf' ! -name 'ring.chm' ! -name 'build' -exec rm -rf {} +
+        find marketing -mindepth 1 -maxdepth 1 ! -name 'presentation' -exec rm -rf {} +
+        rm -rf samples/UsingArabic
+
+    - name: Check release content
+      run: |
+        cd dist/ring
+        test ! -e .git
+        test ! -e applications/winstartupmanager
+        test ! -e tools/ringpm/packages/winstartupmanager
+        test ! -e language/visualsrc
+        test ! -e samples/UsingArabic
+        test -f bin/ring
+        test -f lib/libring.dylib
+        test -f documents/ring.pdf
+        test -f documents/ring.chm
+        test -d documents/build
+        test -d extensions/libdepwin/Apache2.2
+        test -d marketing/presentation
+        ls extensions/libdepwin documents marketing
+
+    - name: Create release file
+      run: |
+        cd dist
+        zip -r -y -q ../ring-macos.zip README.TXT ring
+        ls -lh ../ring-macos.zip
+
+    - name: Ring Tests 
+      run: |
+        cd ring/language/tests
+        chmod +x test
+        ./test
+
+    - name: Ring PM 
+      run: |
+        ringpm list
+        ringpm install firstpackage from mahmoudfayed
+        ringpm run firstpackage
+
+    - name: Test simple program 
+      run: |
+        ring test.ring
+
+    - name: Upload release
+      uses: actions/upload-artifact@v7
+      with:
+        path: ring-macos.zip
+        archive: false
