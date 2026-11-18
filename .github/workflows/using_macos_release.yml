@@ -57,6 +57,49 @@ jobs:
         find marketing -mindepth 1 -maxdepth 1 ! -name 'presentation' -exec rm -rf {} +
         rm -rf samples/UsingArabic
 
+    - name: Make binaries relocatable
+      run: |
+        # The build embeds absolute paths of the runner (e.g. /Users/runner/work/...)
+        # Rewrite them to relative paths so the release works from any folder
+        cd dist/ring
+        BUILD_ROOT="$GITHUB_WORKSPACE"
+        fix_file() {
+          f="$1"
+          kind="$2"
+          file "$f" | grep -q "Mach-O" || return 0
+          changed=0
+          otool -L "$f" | tail -n +2 | awk '{print $1}' | grep "^$BUILD_ROOT" | while read -r dep; do
+            base=$(basename "$dep")
+            if [ "$kind" = "exe" ]; then new="@executable_path/../lib/$base"; else new="@loader_path/$base"; fi
+            echo "$f: $dep -> $new"
+            install_name_tool -change "$dep" "$new" "$f"
+          done
+          if [ "$kind" = "lib" ]; then
+            id=$(otool -D "$f" | tail -n +2)
+            case "$id" in
+              "$BUILD_ROOT"*) install_name_tool -id "@loader_path/$(basename "$f")" "$f" ;;
+            esac
+          fi
+          # install_name_tool invalidates the signature (required on Apple Silicon)
+          codesign --force --sign - "$f"
+        }
+        for f in bin/*; do [ -f "$f" ] && fix_file "$f" exe; done
+        for f in lib/*.dylib; do [ -f "$f" ] && fix_file "$f" lib; done
+
+    - name: Check no build paths remain
+      run: |
+        cd dist/ring
+        bad=0
+        for f in bin/* lib/*; do
+          [ -f "$f" ] || continue
+          file "$f" | grep -q "Mach-O" || continue
+          if otool -L "$f" | tail -n +2 | grep -q "$GITHUB_WORKSPACE"; then
+            echo "Build path found in $f"; otool -L "$f"; bad=1
+          fi
+        done
+        test $bad -eq 0
+        otool -L bin/ring
+
     - name: Check release content
       run: |
         cd dist/ring
